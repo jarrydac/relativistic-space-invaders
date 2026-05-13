@@ -8,6 +8,11 @@ import sys
 from os.path import abspath, dirname
 from random import choice
 
+from spaceinvaders_util import GL_Sprite
+import gl_relativity_py
+import gl_relativity_py.draw as draw
+
+
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
 IMAGE_PATH = BASE_PATH + '/images/'
@@ -21,7 +26,7 @@ BLUE = (80, 255, 239)
 PURPLE = (203, 0, 255)
 RED = (237, 28, 36)
 
-SCREEN = display.set_mode((800, 600))
+SCREEN = display.set_mode((800, 600), OPENGL | DOUBLEBUF)
 FONT = FONT_PATH + 'space_invaders.ttf'
 IMG_NAMES = ['ship', 'mystery',
              'enemy1_1', 'enemy1_2',
@@ -37,9 +42,9 @@ ENEMY_DEFAULT_POSITION = 65  # Initial value for a new game
 ENEMY_MOVE_DOWN = 35
 
 
-class Ship(sprite.Sprite):
+class Ship(GL_Sprite):
     def __init__(self):
-        sprite.Sprite.__init__(self)
+        GL_Sprite.__init__(self)
         self.image = IMAGES['ship']
         self.rect = self.image.get_rect(topleft=(375, 540))
         self.speed = 5
@@ -52,9 +57,9 @@ class Ship(sprite.Sprite):
         game.screen.blit(self.image, self.rect)
 
 
-class Bullet(sprite.Sprite):
+class Bullet(GL_Sprite):
     def __init__(self, xpos, ypos, direction, speed, filename, side):
-        sprite.Sprite.__init__(self)
+        GL_Sprite.__init__(self)
         self.image = IMAGES[filename]
         self.rect = self.image.get_rect(topleft=(xpos, ypos))
         self.speed = speed
@@ -69,9 +74,9 @@ class Bullet(sprite.Sprite):
             self.kill()
 
 
-class Enemy(sprite.Sprite):
+class Enemy(GL_Sprite):
     def __init__(self, row, column):
-        sprite.Sprite.__init__(self)
+        GL_Sprite.__init__(self)
         self.row = row
         self.column = column
         self.images = []
@@ -194,9 +199,9 @@ class EnemiesGroup(sprite.Group):
                 is_column_dead = self.is_column_dead(self._leftAliveColumn)
 
 
-class Blocker(sprite.Sprite):
+class Blocker(GL_Sprite):
     def __init__(self, size, color, row, column):
-        sprite.Sprite.__init__(self)
+        GL_Sprite.__init__(self)
         self.height = size
         self.width = size
         self.color = color
@@ -210,9 +215,9 @@ class Blocker(sprite.Sprite):
         game.screen.blit(self.image, self.rect)
 
 
-class Mystery(sprite.Sprite):
+class Mystery(GL_Sprite):
     def __init__(self):
-        sprite.Sprite.__init__(self)
+        GL_Sprite.__init__(self)
         self.image = IMAGES['mystery']
         self.image = transform.scale(self.image, (75, 35))
         self.rect = self.image.get_rect(topleft=(-80, 45))
@@ -252,7 +257,7 @@ class Mystery(sprite.Sprite):
             self.timer = currentTime
 
 
-class EnemyExplosion(sprite.Sprite):
+class EnemyExplosion(GL_Sprite):
     def __init__(self, enemy, *groups):
         super(EnemyExplosion, self).__init__(*groups)
         self.image = transform.scale(self.get_image(enemy.row), (40, 35))
@@ -275,7 +280,7 @@ class EnemyExplosion(sprite.Sprite):
             self.kill()
 
 
-class MysteryExplosion(sprite.Sprite):
+class MysteryExplosion(GL_Sprite):
     def __init__(self, mystery, score, *groups):
         super(MysteryExplosion, self).__init__(*groups)
         self.text = Text(FONT, 20, str(score), WHITE,
@@ -290,7 +295,7 @@ class MysteryExplosion(sprite.Sprite):
             self.kill()
 
 
-class ShipExplosion(sprite.Sprite):
+class ShipExplosion(GL_Sprite):
     def __init__(self, ship, *groups):
         super(ShipExplosion, self).__init__(*groups)
         self.image = IMAGES['ship']
@@ -332,9 +337,13 @@ class SpaceInvaders(object):
         #   ALSA lib pcm.c:7963:(snd_pcm_recover) underrun occurred
         mixer.pre_init(44100, -16, 1, 4096)
         init()
+        display.gl_set_attribute(GL_CONTEXT_MAJOR_VERSION, 4)
+        display.gl_set_attribute(GL_CONTEXT_MINOR_VERSION, 3)
+        gl_relativity_py.init()
+        draw.set_viewport(800,600)
         self.clock = time.Clock()
         self.caption = display.set_caption('Space Invaders')
-        self.screen = SCREEN
+        self.screen = Surface((800,600))
         self.background = image.load(IMAGE_PATH + 'background.jpg').convert()
         self.startGame = False
         self.mainScreen = True
@@ -635,7 +644,15 @@ class SpaceInvaders(object):
                 self.enemyPosition = ENEMY_DEFAULT_POSITION
                 self.create_game_over(currentTime)
 
-            display.update()
+            draw.clear(0.0,0.0,0.0)
+
+            overlay = Surface( (800,600) ,SRCALPHA)
+            overlay.blit(self.screen,(0,0))
+            overlay_bytes = image.tobytes(overlay,"RGBA",True)
+            draw.overlay(overlay_bytes, 800, 600)
+
+            display.flip()
+
             self.clock.tick(60)
 
 

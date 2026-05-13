@@ -1,1 +1,9 @@
 .DS_Store
+
+__pycache__/
+
+gl_relativity/
+gl_relativity_py
+libgl_relativity.so
+CIE_xyz_1931_2deg.csv
+shaders
