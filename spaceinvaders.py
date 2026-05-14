@@ -11,6 +11,7 @@ from random import choice
 import numpy as np
 
 from spaceinvaders_util import GL_Sprite
+
 import gl_relativity_py
 import gl_relativity_py.draw as draw
 import gl_relativity_py.camera as camera
@@ -18,9 +19,8 @@ from gl_relativity_py.objects import Mesh, Object, Worldline, primitives
 from gl_relativity_py.lights import Light
 
 
-DEPTH = -15
-TIME = 0
-INV_C = 1000/100; # 100 per second
+DEPTH = 15
+INV_C = 1000/1000; # 100 per second
 
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
@@ -47,10 +47,8 @@ IMG_NAMES = ['ship', 'mystery',
 IMAGES = {name: image.load(IMAGE_PATH + '{}.png'.format(name)).convert_alpha()
           for name in IMG_NAMES}
 
-MESHES = {
-    'ship': None,
-}
-
+MESH_NAMES = ['ship', 'enemy1', 'enemy2', 'enemy3', 'mystery']
+MESHES = {name: Mesh.from_file(MESH_PATH + '{}.obj'.format(name)) for name in MESH_NAMES}
 
 BLOCKERS_POSITION = 450
 ENEMY_DEFAULT_POSITION = 65  # Initial value for a new game
@@ -65,10 +63,11 @@ class Ship(GL_Sprite):
         self.speed = 5
 
         worldline = Worldline([])
-        model = np.diag([0.05,0.05,0.05,1])
+        model = np.diag([5,5,5,1])
         model[[1,0]] = -model[[0,1]]
         model[[1,2]] = model[[2,1]]
         self.object = Object(worldline,MESHES['ship'], model)
+        self.depth = DEPTH
 
     def update(self, keys, *args):
         if keys[K_LEFT] and self.rect.x > 10:
@@ -76,12 +75,7 @@ class Ship(GL_Sprite):
         if keys[K_RIGHT] and self.rect.x < 740:
             self.rect.x += self.speed
             
-
-        self.object.wl._events.append( [time.get_ticks(), (self.rect.x-400)/100, (-self.rect.y)/100, DEPTH] )
-        self.object.wl.dirty = True
-        self.object.draw()
-
-
+        self.gl_draw()
         #game.screen.blit(self.image, self.rect)
 
 
@@ -96,17 +90,16 @@ class Bullet(GL_Sprite):
         self.filename = filename
 
         worldline = Worldline([])
-        self.object = Object(worldline,primitives["BOX"], np.diag([0.1,0.2,0.2,1]))
+        self.object = Object(worldline,primitives["SPHERE"], np.diag([self.rect.width,self.rect.height,5,1]))
+        self.depth = DEPTH-5
+
 
     def update(self, keys, *args):
         self.rect.y += self.speed * self.direction
         if self.rect.y < 15 or self.rect.y > 600:
             self.kill()
 
-        #game.screen.blit(self.image, self.rect)
-        self.object.wl._events.append([time.get_ticks(),(self.rect.x-400)/100, (-self.rect.y)/100, DEPTH-0.5])
-        self.object.wl.dirty = True
-        self.object.draw()
+        self.gl_draw()
 
 
 class Enemy(GL_Sprite):
@@ -119,9 +112,19 @@ class Enemy(GL_Sprite):
         self.index = 0
         self.image = self.images[self.index]
         self.rect = self.image.get_rect()
+        
+        meshes = {
+            0: '1',
+            1: '2',
+            2: '2',
+            3: '3',
+            4: '3'
+        }
 
         worldline = Worldline([])
-        self.object = Object(worldline,primitives["BOX"], np.diag([0.1,0.1,0.1,1]))
+        self.object = Object(worldline, MESHES[f"enemy{meshes[row]}"], np.diag([self.rect.width,self.rect.height,10,1]))
+        self.depth = DEPTH
+
 
     def toggle_image(self):
         self.index += 1
@@ -131,9 +134,7 @@ class Enemy(GL_Sprite):
 
     def update(self, *args):
         #game.screen.blit(self.image, self.rect)
-        self.object.wl._events.append([time.get_ticks(),(self.rect.x-400)/100, (-self.rect.y)/100, DEPTH])
-        self.object.wl.dirty = True
-        self.object.draw()
+        self.gl_draw()
 
     def load_images(self):
         images = {0: ['1_2', '1_1'],
@@ -253,13 +254,12 @@ class Blocker(GL_Sprite):
         self.column = column
 
         worldline = Worldline([])
-        self.object = Object(worldline,primitives["BOX"], np.diag([self.width/100,self.height/100,1,1]))
+        self.object = Object(worldline,primitives["BOX"], np.diag([self.width,self.height,10,1]))
+        self.depth = DEPTH
 
     def update(self, keys, *args):
         #game.screen.blit(self.image, self.rect)
-        self.object.wl._events.append([time.get_ticks(),(self.rect.x-400)/100, (-self.rect.y)/100, DEPTH])
-        self.object.wl.dirty = True
-        self.object.draw()
+        self.gl_draw()
 
 
 class Mystery(GL_Sprite):
@@ -276,6 +276,10 @@ class Mystery(GL_Sprite):
         self.mysteryEntered.set_volume(0.3)
         self.playSound = True
 
+        worldline = Worldline([])
+        self.object = Object(worldline, MESHES['mystery'], np.diag([self.rect.width,self.rect.height,10,1]))
+        self.depth = DEPTH
+
     def update(self, keys, currentTime, *args):
         resetTimer = False
         passed = currentTime - self.timer
@@ -287,10 +291,12 @@ class Mystery(GL_Sprite):
                 self.mysteryEntered.fadeout(4000)
                 self.rect.x += 2
                 #game.screen.blit(self.image, self.rect)
+                self.gl_draw()
             if self.rect.x > -100 and self.direction == -1:
                 self.mysteryEntered.fadeout(4000)
                 self.rect.x -= 2
                 #game.screen.blit(self.image, self.rect)
+                self.gl_draw()
 
         if self.rect.x > 830:
             self.playSound = True
@@ -381,13 +387,6 @@ class Text(object):
     def draw(self, surface):
         surface.blit(self.surface, self.rect)
 
-        
-def load_meshes():
-    global MESHES
-    for name in MESHES.keys():
-        MESHES[name] = Mesh.from_file(f"{MESH_PATH}/{name}.obj")
-        
-
 class SpaceInvaders(object):
     def __init__(self):
         # It seems, in Linux buffersize=512 is not enough, use 4096 to prevent:
@@ -399,13 +398,13 @@ class SpaceInvaders(object):
         gl_relativity_py.init()
         draw.set_viewport(800,600)
         camera.set_inv_c(INV_C)
-        camera.set_pos([0,0,0])
-        camera.set_angle([0.0,-3.14/2])
+        camera.set_pos([0,0,900])
+        camera.set_angle([0,-3.14/2])
         
         # Post OpenGl-init loading
-        load_meshes()
-        light1 = Light(np.array([0.0,0.0,10.0]), None, np.array([[500.0,1.8]]))
-        light2 = Light(np.array([0.0,10.0,-10.0]), None, np.array([[700.0,0.8]]))
+        light1 = Light(np.array([100.0,0.0,800.0]), None, np.array([[500.0,1.0]]))
+        light1 = Light(np.array([-100.0,0.0,800.0]), None, np.array([[500.0,1.0]]))
+        light2 = Light(np.array([0.0,0.0,800.0]), None, np.array([[700.0,0.8]]))
 
         self.clock = time.Clock()
         self.caption = display.set_caption('Space Invaders')
@@ -716,10 +715,8 @@ class SpaceInvaders(object):
                 self.enemyPosition = ENEMY_DEFAULT_POSITION
                 self.create_game_over(currentTime)
 
-
             overlay_bytes = image.tobytes(self.screen,"RGBA",True)
             draw.overlay(overlay_bytes, 800, 600, 0.0)
-
             display.flip()
 
             self.clock.tick(60)
