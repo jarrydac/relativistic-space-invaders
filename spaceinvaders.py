@@ -10,7 +10,7 @@ from random import choice
 
 import numpy as np
 
-from spaceinvaders_util import GL_Sprite
+from spaceinvaders_util import GL_Sprite, set_time
 
 import gl_relativity_py
 import gl_relativity_py.draw as draw
@@ -18,9 +18,10 @@ import gl_relativity_py.camera as camera
 from gl_relativity_py.objects import Mesh, Object, Worldline, primitives
 from gl_relativity_py.lights import Light
 
+DEBUG = True
 
-DEPTH = 15
-INV_C = 1000/1000; # 100 per second
+DEPTH = 0
+INV_C = 1/5 # 100 per frame
 
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
@@ -67,13 +68,20 @@ class Ship(GL_Sprite):
         model[[1,0]] = -model[[0,1]]
         model[[1,2]] = model[[2,1]]
         self.object = Object(worldline,MESHES['ship'], model)
-        self.depth = DEPTH
+        self.depth = DEPTH+10
+        
+        self.gl_dirty = 1
+        self.vel = np.array([0,0])
 
     def update(self, keys, *args):
         if keys[K_LEFT] and self.rect.x > 10:
-            self.rect.x -= self.speed
-        if keys[K_RIGHT] and self.rect.x < 740:
-            self.rect.x += self.speed
+            #self.rect.x -= self.speed
+            self.vel = np.array([-self.speed, 0.0])
+        elif keys[K_RIGHT] and self.rect.x < 740:
+            #self.rect.x += self.speed
+            self.vel = np.array([self.speed, 0.0])
+        else:
+            self.vel = np.array([0.0, 0.0])
             
         self.gl_draw()
         #game.screen.blit(self.image, self.rect)
@@ -91,11 +99,14 @@ class Bullet(GL_Sprite):
 
         worldline = Worldline([])
         self.object = Object(worldline,primitives["SPHERE"], np.diag([self.rect.width,self.rect.height,5,1]))
-        self.depth = DEPTH-5
+        self.depth = DEPTH
+        
+        self.gl_dirty = 1
+        self.vel = np.array([0.0,direction*speed])
 
 
     def update(self, keys, *args):
-        self.rect.y += self.speed * self.direction
+        #self.rect.y += self.speed * self.direction
         if self.rect.y < 15 or self.rect.y > 600:
             self.kill()
 
@@ -122,8 +133,11 @@ class Enemy(GL_Sprite):
         }
 
         worldline = Worldline([])
-        self.object = Object(worldline, MESHES[f"enemy{meshes[row]}"], np.diag([self.rect.width,self.rect.height,10,1]))
+        self.object = Object(worldline, MESHES[f"enemy{meshes[row]}"], np.diag([self.rect.width,self.rect.height,100,1]))
         self.depth = DEPTH
+        
+        self.gl_dirty = 1
+        self.vel = np.array([0.0,0.0])
 
 
     def toggle_image(self):
@@ -184,6 +198,7 @@ class EnemiesGroup(sprite.Group):
                 for enemy in self:
                     enemy.rect.y += ENEMY_MOVE_DOWN
                     enemy.toggle_image()
+                    enemy.gl_dirty = 1
                     if self.bottom < enemy.rect.y + 35:
                         self.bottom = enemy.rect.y + 35
             else:
@@ -191,6 +206,7 @@ class EnemiesGroup(sprite.Group):
                 for enemy in self:
                     enemy.rect.x += velocity
                     enemy.toggle_image()
+                    enemy.gl_dirty = 1
                 self.moveNumber += 1
 
             self.timer += self.moveTime
@@ -254,8 +270,11 @@ class Blocker(GL_Sprite):
         self.column = column
 
         worldline = Worldline([])
-        self.object = Object(worldline,primitives["BOX"], np.diag([self.width,self.height,10,1]))
+        self.object = Object(worldline,primitives["BOX"], np.diag([self.width,self.height,100,1]))
         self.depth = DEPTH
+        
+        self.gl_dirty = 1
+        self.vel = np.array([0.0,0.0])
 
     def update(self, keys, *args):
         #game.screen.blit(self.image, self.rect)
@@ -279,6 +298,9 @@ class Mystery(GL_Sprite):
         worldline = Worldline([])
         self.object = Object(worldline, MESHES['mystery'], np.diag([self.rect.width,self.rect.height,10,1]))
         self.depth = DEPTH
+    
+        self.gl_dirty = 1
+        self.vel = np.array([0,0])
 
     def update(self, keys, currentTime, *args):
         resetTimer = False
@@ -289,13 +311,15 @@ class Mystery(GL_Sprite):
                 self.playSound = False
             if self.rect.x < 840 and self.direction == 1:
                 self.mysteryEntered.fadeout(4000)
-                self.rect.x += 2
+                #self.rect.x += 2
                 #game.screen.blit(self.image, self.rect)
+                self.vel = np.array([2,0])
                 self.gl_draw()
             if self.rect.x > -100 and self.direction == -1:
                 self.mysteryEntered.fadeout(4000)
-                self.rect.x -= 2
+                #self.rect.x -= 2
                 #game.screen.blit(self.image, self.rect)
+                self.vel = np.array([-2,0])
                 self.gl_draw()
 
         if self.rect.x > 830:
@@ -326,10 +350,10 @@ class EnemyExplosion(GL_Sprite):
     def update(self, current_time, *args):
         passed = current_time - self.timer
         if passed <= 100:
-            #game.screen.blit(self.image, self.rect)
+            game.screen.blit(self.image, self.rect)
             pass
         elif passed <= 200:
-            #game.screen.blit(self.image2, (self.rect.x - 6, self.rect.y - 6))
+            game.screen.blit(self.image2, (self.rect.x - 6, self.rect.y - 6))
             pass
         elif 400 < passed:
             self.kill()
@@ -345,7 +369,7 @@ class MysteryExplosion(GL_Sprite):
     def update(self, current_time, *args):
         passed = current_time - self.timer
         if passed <= 200 or 400 < passed <= 600:
-            #self.text.draw(game.screen)
+            self.text.draw(game.screen)
             pass
         elif 600 < passed:
             self.kill()
@@ -361,7 +385,7 @@ class ShipExplosion(GL_Sprite):
     def update(self, current_time, *args):
         passed = current_time - self.timer
         if 300 < passed <= 600:
-            #game.screen.blit(self.image, self.rect)
+            game.screen.blit(self.image, self.rect)
             pass
         elif 900 < passed:
             self.kill()
@@ -402,13 +426,13 @@ class SpaceInvaders(object):
         camera.set_angle([0,-3.14/2])
         
         # Post OpenGl-init loading
-        light1 = Light(np.array([100.0,0.0,800.0]), None, np.array([[500.0,1.0]]))
-        light1 = Light(np.array([-100.0,0.0,800.0]), None, np.array([[500.0,1.0]]))
-        light2 = Light(np.array([0.0,0.0,800.0]), None, np.array([[700.0,0.8]]))
+        light1 = Light(np.array([0.0,0.0,800.0]), None, np.array([[570.0,0.4]]))
 
+        self.frame = 0
         self.clock = time.Clock()
         self.caption = display.set_caption('Space Invaders')
         self.screen = Surface((800,600), SRCALPHA)
+        self.debug_screen = Surface((800,600), SRCALPHA)
         self.background = image.load(IMAGE_PATH + 'background.jpg').convert()
         self.background_bytes = image.tobytes(self.background,"RGBA",True)
         self.startGame = False
@@ -647,6 +671,9 @@ class SpaceInvaders(object):
         while True:
             draw.clear(0.0,0.0,0.0)
             self.screen.fill([0,0,0,0])
+            self.debug_screen.fill([0,0,0,0])
+
+            set_time(self.frame)
 
             if self.mainScreen:
                 self.screen.blit(self.background, (0, 0))
@@ -708,6 +735,7 @@ class SpaceInvaders(object):
                     self.create_new_ship(self.makeNewShip, currentTime)
                     self.make_enemies_shoot()
 
+                    self.allSprites.draw(self.debug_screen)
 
             elif self.gameOver:
                 currentTime = time.get_ticks()
@@ -715,12 +743,16 @@ class SpaceInvaders(object):
                 self.enemyPosition = ENEMY_DEFAULT_POSITION
                 self.create_game_over(currentTime)
 
+            if DEBUG:
+                overlay_bytes = image.tobytes(self.debug_screen,"RGBA",True)
+                draw.overlay(overlay_bytes, 800, 600, 0.1)
+
             overlay_bytes = image.tobytes(self.screen,"RGBA",True)
             draw.overlay(overlay_bytes, 800, 600, 0.0)
             display.flip()
 
             self.clock.tick(60)
-            camera.set_time( time.get_ticks() )
+            self.frame+=1
 
 
 if __name__ == '__main__':
