@@ -18,10 +18,10 @@ import gl_relativity_py.camera as camera
 from gl_relativity_py.objects import Mesh, Object, Worldline, primitives
 from gl_relativity_py.lights import Light
 
-DEBUG = True
+DEBUG = False
 
 DEPTH = 0
-INV_C = 1/5 # 100 per frame
+INV_C = 1/50 # 100 per frame
 
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
@@ -270,7 +270,7 @@ class Blocker(GL_Sprite):
         self.column = column
 
         worldline = Worldline([])
-        self.object = Object(worldline,primitives["BOX"], np.diag([self.width,self.height,100,1]))
+        self.object = Object(worldline,primitives["BOX"], np.diag([self.width,self.height,30,1]))
         self.depth = DEPTH
         
         self.gl_dirty = 1
@@ -420,13 +420,14 @@ class SpaceInvaders(object):
         display.gl_set_attribute(GL_CONTEXT_MAJOR_VERSION, 4)
         display.gl_set_attribute(GL_CONTEXT_MINOR_VERSION, 3)
         gl_relativity_py.init()
-        draw.set_viewport(800,600)
+        draw.set_viewport(0,0,800,600)
+        camera.set_perspective(near_z=750, far_z=1000)
         camera.set_inv_c(INV_C)
         camera.set_pos([0,0,900])
         camera.set_angle([0,-3.14/2])
         
         # Post OpenGl-init loading
-        light1 = Light(np.array([0.0,0.0,800.0]), None, np.array([[570.0,0.4]]))
+        light1 = Light(np.array([400.0,300.0,800.0]), None, np.array([[570.0,0.4]]))
 
         self.frame = 0
         self.clock = time.Clock()
