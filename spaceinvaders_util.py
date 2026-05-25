@@ -12,7 +12,15 @@ from pygame.sprite import Group as PygameGroup
 from gl_relativity_py.objects import Worldline, Object, Mesh, primitives
 from gl_relativity_py.camera import camera 
 
+
 class GL_Sprite(PygameSprite):
+    """ 
+    Extension of pygame.sprite.Sprite which can also draw a mesh to the OpenGL 3D layer. 
+    Follows the convention of DirtySprite().dirty for updating the object worldline:
+        gl_dirty = 2: Update every frame.
+        gl_dirty = 1: WL is updated, and gl_dirty reset to 0.
+        gl_dirty = 0: WL is not updated.
+    """
     def __init__(self,*groups):
         super().__init__(groups)
         self.depth = 0
@@ -53,12 +61,25 @@ class GL_Sprite(PygameSprite):
             self._vel = vel
             # Only set dirty if dirty is set to 0
             self.gl_dirty = 1 if self.gl_dirty == 0 else self.gl_dirty
+            
+    def kill(self):
+        PygameSprite.kill(self)
+        # Set gl_dirty to add 'death' event, and set wl to finite.
+        self.gl_dirty = 1
+        self.object.wl.infinite_end = False
+        
+        # Add sprite to Ghosts group
+        self.add(ghosts)
+    
+    def alive(self):
+        return self.groups is [ghosts]
+        
 
 
         
 class GL_Group(PygameGroup):
-    def __init__(self,*groups):
-        super().__init__(groups)
+    def __init__(self,*sprites):
+        super().__init__(sprites)
         
     def draw(self, surface=None, *args):
         if surface is not None:
@@ -68,3 +89,6 @@ class GL_Group(PygameGroup):
             for sprite in self.sprites():
                 if isinstance(sprite, GL_Sprite):
                     sprite.gl_draw()
+                    
+
+ghosts = GL_Group()

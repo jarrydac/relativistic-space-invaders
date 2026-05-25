@@ -10,7 +10,7 @@ from random import choice
 
 import numpy as np
 
-from spaceinvaders_util import GL_Sprite 
+from spaceinvaders_util import GL_Sprite, ghosts 
 
 import gl_relativity_py
 import gl_relativity_py.draw as draw
@@ -21,7 +21,7 @@ from gl_relativity_py.lights import Light
 DEBUG = False
 
 DEPTH = 0
-INV_C = 1/50 # 100 per frame
+INV_C = 1/25 # 100 per frame
 
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
@@ -334,7 +334,7 @@ class Mystery(GL_Sprite):
             self.timer = currentTime
 
 
-class EnemyExplosion(GL_Sprite):
+class EnemyExplosion(sprite.Sprite):
     def __init__(self, enemy, *groups):
         super(EnemyExplosion, self).__init__(*groups)
         self.image = transform.scale(self.get_image(enemy.row), (40, 35))
@@ -359,7 +359,7 @@ class EnemyExplosion(GL_Sprite):
             self.kill()
 
 
-class MysteryExplosion(GL_Sprite):
+class MysteryExplosion(sprite.Sprite):
     def __init__(self, mystery, score, *groups):
         super(MysteryExplosion, self).__init__(*groups)
         self.text = Text(FONT, 20, str(score), WHITE,
@@ -375,7 +375,7 @@ class MysteryExplosion(GL_Sprite):
             self.kill()
 
 
-class ShipExplosion(GL_Sprite):
+class ShipExplosion(sprite.Sprite):
     def __init__(self, ship, *groups):
         super(ShipExplosion, self).__init__(*groups)
         self.image = IMAGES['ship']
@@ -737,6 +737,7 @@ class SpaceInvaders(object):
                     self.make_enemies_shoot()
 
                     self.allSprites.draw(self.debug_screen)
+                    ghosts.draw()
 
             elif self.gameOver:
                 currentTime = time.get_ticks()
