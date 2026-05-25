@@ -10,11 +10,11 @@ from random import choice
 
 import numpy as np
 
-from spaceinvaders_util import GL_Sprite, set_time
+from spaceinvaders_util import GL_Sprite 
 
 import gl_relativity_py
 import gl_relativity_py.draw as draw
-import gl_relativity_py.camera as camera
+from gl_relativity_py.camera import camera
 from gl_relativity_py.objects import Mesh, Object, Worldline, primitives
 from gl_relativity_py.lights import Light
 
@@ -422,9 +422,9 @@ class SpaceInvaders(object):
         gl_relativity_py.init()
         draw.set_viewport(0,0,800,600)
         camera.set_perspective(near_z=750, far_z=1000)
-        camera.set_inv_c(INV_C)
-        camera.set_pos([0,0,900])
-        camera.set_angle([0,-3.14/2])
+        camera.inv_c = INV_C 
+        camera.pos = [0,0,900]
+        camera.angle = [0,-3.14/2]
         
         # Post OpenGl-init loading
         light1 = Light(np.array([400.0,300.0,800.0]), None, np.array([[570.0,0.4]]))
@@ -674,7 +674,7 @@ class SpaceInvaders(object):
             self.screen.fill([0,0,0,0])
             self.debug_screen.fill([0,0,0,0])
 
-            set_time(self.frame)
+            camera.time = self.frame
 
             if self.mainScreen:
                 self.screen.blit(self.background, (0, 0))

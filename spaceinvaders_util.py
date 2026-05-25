@@ -10,9 +10,7 @@ from pygame.sprite import Group as PygameGroup
 #from pygame import time
 
 from gl_relativity_py.objects import Worldline, Object, Mesh, primitives
-from gl_relativity_py import camera 
-
-time = 0
+from gl_relativity_py.camera import camera 
 
 class GL_Sprite(PygameSprite):
     def __init__(self,*groups):
@@ -25,16 +23,14 @@ class GL_Sprite(PygameSprite):
         self._vel = np.array([0.0,0.0])
         
     def gl_draw(self):
-        global time 
-
         # Perform OpenGL draw calls
         if self.gl_dirty == 2:
             # _gl_dirty is 2, ie reload wl every frame
-            self.object.wl._events.append( [time, (self.rect.x-400), (300-self.rect.y), -self.depth] )
+            self.object.wl._events.append( [camera.time, (self.rect.x-400), (300-self.rect.y), -self.depth] )
             self.object.wl.dirty = True
         elif self.gl_dirty == 1:
             # _gl_dirty is 1, velocity has changed, update wl
-            self.object.wl._events.append( [time, (self.rect.x-400), (300-self.rect.y), -self.depth] )
+            self.object.wl._events.append( [camera.time, (self.rect.x-400), (300-self.rect.y), -self.depth] )
             self.object.wl.final_vel = np.array([self.vel[0],-self.vel[1],0.0])
             self.object.wl.initial_vel = np.array([self.vel[0],-self.vel[1],0.0])
             self.object.wl.dirty = True
@@ -72,8 +68,3 @@ class GL_Group(PygameGroup):
             for sprite in self.sprites():
                 if isinstance(sprite, GL_Sprite):
                     sprite.gl_draw()
-        
-def set_time(t):
-    global time
-    camera.set_time(t)
-    time = t
