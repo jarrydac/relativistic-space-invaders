@@ -13,7 +13,7 @@ import numpy as np
 from spaceinvaders_util import GL_Sprite, ghosts 
 
 import gl_relativity_py
-import gl_relativity_py.draw as draw
+import gl_relativity_py.draw as gl_draw
 from gl_relativity_py.camera import camera
 from gl_relativity_py.objects import Mesh, Object, Worldline, primitives
 from gl_relativity_py.lights import Light
@@ -21,7 +21,7 @@ from gl_relativity_py.lights import Light
 DEBUG = False
 
 DEPTH = 0
-INV_C = 1/25 # 100 per frame
+INV_C = 1/40 # 100 per frame
 
 BASE_PATH = abspath(dirname(__file__))
 FONT_PATH = BASE_PATH + '/fonts/'
@@ -74,14 +74,20 @@ class Ship(GL_Sprite):
         self.vel = np.array([0,0])
 
     def update(self, keys, *args):
+        
+        # Hacky velocity easing, to stop wl filling up
+        def move(vel, speed, damp, thres):
+            m = vel + (speed-vel)*damp
+            if abs( m-speed  ) < thres:
+                m = speed
+            return m
+
         if keys[K_LEFT] and self.rect.x > 10:
-            #self.rect.x -= self.speed
-            self.vel = np.array([-self.speed, 0.0])
+            self.vel = [move(self.vel[0], -self.speed, 0.3, 0.09), 0.0]
         elif keys[K_RIGHT] and self.rect.x < 740:
-            #self.rect.x += self.speed
-            self.vel = np.array([self.speed, 0.0])
+            self.vel = [move(self.vel[0], self.speed, 0.3, 0.09), 0.0]
         else:
-            self.vel = np.array([0.0, 0.0])
+            self.vel = [move(self.vel[0], 0, 0.5, 0.09), 0.0]
             
         self.gl_draw()
         #game.screen.blit(self.image, self.rect)
@@ -420,14 +426,15 @@ class SpaceInvaders(object):
         display.gl_set_attribute(GL_CONTEXT_MAJOR_VERSION, 4)
         display.gl_set_attribute(GL_CONTEXT_MINOR_VERSION, 3)
         gl_relativity_py.init()
-        draw.set_viewport(0,0,800,600)
-        camera.set_perspective(near_z=750, far_z=1000)
+        gl_draw.set_viewport(0,0,800,600)
+        camera.set_perspective(near_z=800, far_z=1100)
         camera.inv_c = INV_C 
         camera.pos = [0,0,900]
+        camera.offset = [0,0,900]
         camera.angle = [0,-3.14/2]
         
         # Post OpenGl-init loading
-        light1 = Light(np.array([400.0,300.0,800.0]), None, np.array([[570.0,0.4]]))
+        light1 = Light(np.array([0.0,300.0,800.0]), None, np.array([[570.0,0.4]]))
 
         self.frame = 0
         self.clock = time.Clock()
@@ -670,7 +677,7 @@ class SpaceInvaders(object):
 
     def main(self):
         while True:
-            draw.clear(0.0,0.0,0.0)
+            gl_draw.clear(0.0,0.0,0.0)
             self.screen.fill([0,0,0,0])
             self.debug_screen.fill([0,0,0,0])
 
@@ -703,7 +710,7 @@ class SpaceInvaders(object):
                 if not self.enemies and not self.explosionsGroup:
                     currentTime = time.get_ticks()
                     if currentTime - self.gameTimer < 3000:
-                        draw.overlay(self.background_bytes, 800, 600, 1.0) 
+                        gl_draw.overlay(self.background_bytes, 800, 600, 1.0) 
                         self.scoreText2 = Text(FONT, 20, str(self.score),
                                                GREEN, 85, 5)
                         self.scoreText.draw(self.screen)
@@ -721,7 +728,7 @@ class SpaceInvaders(object):
                     currentTime = time.get_ticks()
                     self.play_main_music(currentTime)
                     #self.screen.blit(self.background, (0, 0))
-                    draw.overlay(self.background_bytes, 800, 600, 1.0) 
+                    gl_draw.overlay(self.background_bytes, 800, 600, 1.0) 
                     self.allBlockers.update(self.screen)
                     self.scoreText2 = Text(FONT, 20, str(self.score), GREEN,
                                            85, 5)
@@ -738,6 +745,13 @@ class SpaceInvaders(object):
 
                     self.allSprites.draw(self.debug_screen)
                     ghosts.draw()
+                    
+                    camera.offset = \
+                        [-(-400+self.player.rect.x+self.player.rect.width/2),
+                         -(300-self.player.rect.y),
+                         900]
+                    draw.circle(self.debug_screen, "white", [self.player.rect.x+self.player.rect.width/2,self.player.rect.y], 5)
+                    camera.vel = [self.player.vel[0], self.player.vel[1], 0]
 
             elif self.gameOver:
                 currentTime = time.get_ticks()
@@ -747,16 +761,15 @@ class SpaceInvaders(object):
 
             if DEBUG:
                 overlay_bytes = image.tobytes(self.debug_screen,"RGBA",True)
-                draw.overlay(overlay_bytes, 800, 600, 0.1)
+                gl_draw.overlay(overlay_bytes, 800, 600, 0.1)
 
             overlay_bytes = image.tobytes(self.screen,"RGBA",True)
-            draw.overlay(overlay_bytes, 800, 600, 0.0)
+            gl_draw.overlay(overlay_bytes, 800, 600, 0.0)
             display.flip()
 
             self.clock.tick(60)
             self.frame+=1
-
-
+            
 if __name__ == '__main__':
     game = SpaceInvaders()
     game.main()

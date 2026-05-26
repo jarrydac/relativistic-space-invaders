@@ -6,8 +6,8 @@ Space Invaders with special relativistic effects, using jarrydac/gl_relativity.
 - [x] Add and draw 3D models
 - [x] Infinite worldlines
 - [ ] Reduce duplicate worldlines, using model matricies to offset from a shared worldlines
-- [ ] Draw full lifespan of objects (non-infinite worldline flag, with callback?)
-- [ ] Offset camera from relativity 'observer'
+- [x] Draw full lifespan of objects (non-infinite worldline flag, with callback?)
+- [x] Offset camera from relativity 'observer'
 
 ### Appearance
 - [ ] More efficient lighting (linear combinations of the texture rows?)
