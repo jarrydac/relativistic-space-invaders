@@ -758,7 +758,7 @@ class SpaceInvaders(object):
                          -(300-self.player.rect.y),
                          900]
                     draw.circle(self.debug_screen, "white", [self.player.rect.x+self.player.rect.width/2,self.player.rect.y], 5)
-                    camera.vel = [self.player.vel[0], self.player.vel[1], 0]
+                    camera.vel = [self.player.vel[0], -self.player.vel[1], 0]
 
             elif self.gameOver:
                 ghosts.empty()
