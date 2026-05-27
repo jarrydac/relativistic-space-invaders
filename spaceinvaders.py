@@ -104,8 +104,11 @@ class Bullet(GL_Sprite):
         self.filename = filename
 
         worldline = Worldline([])
-        self.object = Object(worldline,primitives["SPHERE"], np.diag([self.rect.width,self.rect.height,5,1]))
-        self.depth = DEPTH
+        model = np.diag([self.rect.width,self.rect.height,5,1])
+        model[3][0] = self.rect.width/2
+        model[3][1] = self.rect.height/2
+        self.object = Object(worldline,primitives["SPHERE"], model )
+        self.depth = DEPTH+10
         
         self.gl_dirty = 1
         self.vel = np.array([0.0,direction*speed])
@@ -434,7 +437,9 @@ class SpaceInvaders(object):
         camera.angle = [0,-3.14/2]
         
         # Post OpenGl-init loading
-        light1 = Light(np.array([0.0,300.0,800.0]), None, np.array([[570.0,0.4]]))
+        light1 = Light(np.array([400.0,-200.0,0.0]), None, np.array([[450.0,0.2]]))
+        light3 = Light(np.array([-400.0,-200.0,0.0]), None, np.array([[650.0,0.2]]))
+        light2 = Light(np.array([0.0,300.0,800.0]), None, np.array([[570.0,0.5]]))
 
         self.frame = 0
         self.clock = time.Clock()
@@ -466,6 +471,7 @@ class SpaceInvaders(object):
         self.livesGroup = sprite.Group(self.life1, self.life2, self.life3)
 
     def reset(self, score):
+        ghosts.empty()
         self.player = Ship()
         self.playerGroup = sprite.Group(self.player)
         self.explosionsGroup = sprite.Group()
@@ -651,6 +657,7 @@ class SpaceInvaders(object):
 
     def create_new_ship(self, createShip, currentTime):
         if createShip and (currentTime - self.shipTimer > 900):
+            ghosts.remove(self.player)
             self.player = Ship()
             self.allSprites.add(self.player)
             self.playerGroup.add(self.player)
@@ -754,6 +761,7 @@ class SpaceInvaders(object):
                     camera.vel = [self.player.vel[0], self.player.vel[1], 0]
 
             elif self.gameOver:
+                ghosts.empty()
                 currentTime = time.get_ticks()
                 # Reset enemy starting position
                 self.enemyPosition = ENEMY_DEFAULT_POSITION

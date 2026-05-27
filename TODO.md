@@ -19,3 +19,6 @@ Space Invaders with special relativistic effects, using jarrydac/gl_relativity.
 ### Camera (camera branch)
 - [ ] Try first person camera
 - [ ] Try moving camera with ship
+
+### Distribution
+- [ ] Use a proper build manager
