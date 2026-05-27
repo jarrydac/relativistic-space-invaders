@@ -11,7 +11,8 @@ The relativistic effects are relative to an observer inside the ship. Enemy bull
 
 This project is forked from [leerob/space-invaders](https://github.com/leerob/space-invaders).
 
-<img src="https://i.imgur.com/HF5Ub8v.png" />
+[<img src="https://i.imgur.com/HF5Ub8v.png" />](https://youtu.be/1y6AyXHK3Ls)
+Watch the demo! [https://youtu.be/1y6AyXHK3Ls](https://youtu.be/1y6AyXHK3Ls)
 
 ## Space Invaders
 
@@ -32,8 +33,4 @@ Run the `INSTALL.sh` script, which will download, build and install `gl_relativi
 ```bash
 python ./spaceinvaders.py
 ```
-
-## Demo
-
-_TODO_
 
